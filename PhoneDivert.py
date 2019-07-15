@@ -35,7 +35,9 @@ data.drop_duplicates(subset ="Caller", keep = False, inplace = True)
 frames = [data, reservedRecords]
 result = pd.concat(frames)
 
-ClientName = filename = sys.argv[1] #Change this later on
+#ClientName = input("Enter client's name : ") 
+ClientName = "Asebestos"
+
 #Calculation
 rowCount = result.shape[0]
 TotalInquries = rowCount * 0.75
@@ -43,11 +45,14 @@ TotalInquries = rowCount * 0.75
 #Getting price according to client
 Clients = pd.read_excel('Clients.xlsx', index_col=0) 
 Clients = Clients[['Client', 'Price']]
+
 Price = Clients.loc[Clients['Client'] == (ClientName)]
 Price = Price['Price'].values[0]
 TotalPrice = Price *TotalInquries
 
-
+result.loc[-1] = [ClientName, 'Date range :', filename , str(rowCount) +'- 25%', ' Total enquires',str(TotalInquries)+" Invoiced x"+str(Price),str(TotalPrice)]  # adding a row
+result.index = result.index + 1  # shifting index
+result.sort_index(inplace=True) 
 
 
 print(result)
@@ -61,7 +66,7 @@ if not os.path.exists(path):
 
 #Create file in directory
 filename = path+"/" + ClientName + ".csv"
-result.to_csv(filename, index=False)
+result.to_csv(filename, index=False,header=False)
 
 
 ##################################################################################################################################
