@@ -1,5 +1,5 @@
 import os
-
+import sys
 import requests
 import pandas as pd
 from io import StringIO
@@ -35,7 +35,7 @@ data.drop_duplicates(subset ="Caller", keep = False, inplace = True)
 frames = [data, reservedRecords]
 result = pd.concat(frames)
 
-ClientName = "All Drains LTD" #Change this later on
+ClientName = filename = sys.argv[1] #Change this later on
 #Calculation
 rowCount = result.shape[0]
 TotalInquries = rowCount * 0.75
@@ -52,16 +52,16 @@ TotalPrice = Price *TotalInquries
 
 print(result)
 
-# #Create path
-# path = "./Reports/" + date_ago + " to " + date
+#Create path
+path = "./Reports/" + date_ago + " to " + date
 
-# #Create Directory if doesnt exit
-# if not os.path.exists(path):
-#     os.makedirs(path)
+#Create Directory if doesnt exit
+if not os.path.exists(path):
+    os.makedirs(path)
 
-# #Create file in directory
-# filename = path+"/" + ClientName + ".csv"
-# result.to_csv(filename, index=False)
+#Create file in directory
+filename = path+"/" + ClientName + ".csv"
+result.to_csv(filename, index=False)
 
 
 ##################################################################################################################################
