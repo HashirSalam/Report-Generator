@@ -110,23 +110,23 @@ def genrateSummaryReport():
 
     path = r'.\Reports\09-07-2019 to 16-07-2019' # use your path
     all_files = glob.glob(path + "/*.csv")
-    #print(all_files)
+    print(all_files)
     li = []
 
     for filename in all_files:
-         df = pd.read_csv(filename, nrows=0)
+         df = pd.read_csv(filename, nrows=2)
          li.append(df)
 
     frame = pd.concat(li, axis=0, ignore_index=True)
-    print(frame)
-
+    print(frame )
+    
 
 
 
 ###########################
 if __name__== "__main__":
-  genrateClientReport()
-  #genrateSummaryReport()
+  #genrateClientReport()
+  genrateSummaryReport()
 ##################################################################################################################################
 #os.mkdir(path)
 
