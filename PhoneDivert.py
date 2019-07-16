@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 import requests
 import pandas as pd
 from io import StringIO
@@ -9,66 +10,123 @@ from openpyxl import Workbook
 from openpyxl.writer.excel import ExcelWriter
 
 
+def genrateClientReport():
+    yearsnow = time.strftime("%Y")
+    monthsnow = time.strftime("%m")
+    daynow = time.strftime("%d")
+    date = daynow+'-'+monthsnow+'-'+yearsnow
+    epoch_ago = time.time()-604800
+    yearsago = (time.strftime('%Y', time.localtime(epoch_ago)))
+    agomonths = (time.strftime('%m', time.localtime(epoch_ago)))
+    agodays = (time.strftime('%d', time.localtime(epoch_ago)))
+    date_ago = agodays+'-'+agomonths+'-'+yearsago
 
-yearsnow = time.strftime("%Y")
-monthsnow = time.strftime("%m")
-daynow = time.strftime("%d")
-date = daynow+'-'+monthsnow+'-'+yearsnow
-epoch_ago = time.time()-604800
-yearsago = (time.strftime('%Y', time.localtime(epoch_ago)))
-agomonths = (time.strftime('%m', time.localtime(epoch_ago)))
-agodays = (time.strftime('%d', time.localtime(epoch_ago)))
-date_ago = agodays+'-'+agomonths+'-'+yearsago
+    filename = (date_ago + ' to ' + date)
+    print(filename)
 
-filename = (date_ago + ' to ' + date)
-print(filename)
+    #Loading data
+    #data = input("Enter input filename (example: input.csv) : ") 
+    data = pd.read_csv("input.csv")
+    #separating witheld information
+    reservedRecords = data.loc[data['Caller'] == ("withheld")]
 
-#Loading data
-data = pd.read_csv("input.csv")
-#separating witheld information
-reservedRecords = data.loc[data['Caller'] == ("withheld")]
+    # dropping ALL duplicte values 
+    data.drop_duplicates(subset ="Caller", keep = False, inplace = True)
 
-# dropping ALL duplicte values 
-data.drop_duplicates(subset ="Caller", keep = False, inplace = True)
+    #Add 0s for numbers
+    data['Caller'] = '0' + data['Caller'].astype(str)
+    data['Called'] = '0' + data['Called'].astype(str)
+    data['Destination'] = '0' + data['Destination'].astype(str)
 
-#Concat with rest 
-frames = [data, reservedRecords]
-result = pd.concat(frames)
+    reservedRecords['Called'] = '0' + reservedRecords['Called'].astype(str)
+    reservedRecords['Destination'] = '0' + reservedRecords['Destination'].astype(str)
+    #To string
+    data['Caller'] = '"'+data['Caller']+'"'
+    data['Called'] = '"'+data['Called']+'"'
+    data['Destination'] = '"'+data['Destination']+'"'
 
-#ClientName = input("Enter client's name : ") 
-ClientName = "Asebestos"
+    reservedRecords['Called'] = '"'+reservedRecords['Called']+'"'
+    reservedRecords['Destination'] = '"'+reservedRecords['Destination']+'"'
 
-#Calculation
-rowCount = result.shape[0]
-TotalInquries = rowCount * 0.75
+    #Concat with rest 
+    frames = [data, reservedRecords]
+    result = pd.concat(frames)
+    
+    #Sort according to date
+    result = result.sort_values(by=['Date'])
+        
+    #ClientName = input("Enter client's name : ") 
+    ClientName = "Asebestos"
 
-#Getting price according to client
-Clients = pd.read_excel('Clients.xlsx', index_col=0) 
-Clients = Clients[['Client', 'Price']]
+    #Calculation
+    rowCount = result.shape[0]
+    TotalInquries = rowCount * 0.75
+    
+    #Getting price according to client
+    Clients = pd.read_excel('Clients.xlsx', index_col=0) 
+    Clients = Clients[['Client', 'Price']]
 
-Price = Clients.loc[Clients['Client'] == (ClientName)]
-Price = Price['Price'].values[0]
-TotalPrice = Price *TotalInquries
+    Price = Clients.loc[Clients['Client'] == (ClientName)]
+    Price = Price['Price'].values[0]
+    
+    TotalPrice = Price *TotalInquries
 
-result.loc[-1] = [ClientName, 'Date range :', filename , str(rowCount) +'- 25%', ' Total enquires',str(TotalInquries)+" Invoiced x"+str(Price),str(TotalPrice)]  # adding a row
-result.index = result.index + 1  # shifting index
-result.sort_index(inplace=True) 
+    # Create caclulated frame on CSV top
+    df1 = pd.DataFrame({
+    'Date': [ClientName, 'Date Range', '', '','',''],
+    'Time': ['',filename, str(rowCount)+' -25%', '', '', ''],
+    'Caller': ['', '', 'Total enquires', '','',''],
+    'Location': ['', '', str(TotalInquries)+' Invoiced', '','',''],
+    'Called': ['', '', 'x'+str(Price), '','',''],
+    'Destination': ['', '', str(TotalPrice), '','',''],
+    'Duration': ['', '', '', '','','']}
+    ,index=[0, 1, 2, 3,4,5])
+    
+    # result.loc[-1] = [ClientName, 'Date range :', filename , str(rowCount) +'- 25%', ' Total enquires',str(TotalInquries)+" Invoiced x"+str(Price),str(TotalPrice)]  # adding a row
+    # result.index = result.index + 1  # shifting index
+    # result.sort_index(inplace=True) 
+    result = df1.append(result)
+    
+    
+    print (result)
+    
+
+    #Create path
+    path = "./Reports/" + date_ago + " to " + date
+
+    #Create Directory if doesnt exit
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    #Create file in directory
+    filename = path+"/" + ClientName + ".csv"
+    
+  
+    result.to_csv(filename, index=False, header=False)
 
 
-print(result)
+##########################
+def genrateSummaryReport():
 
-#Create path
-path = "./Reports/" + date_ago + " to " + date
+    path = r'.\Reports\09-07-2019 to 16-07-2019' # use your path
+    all_files = glob.glob(path + "/*.csv")
+    #print(all_files)
+    li = []
 
-#Create Directory if doesnt exit
-if not os.path.exists(path):
-    os.makedirs(path)
+    for filename in all_files:
+         df = pd.read_csv(filename, nrows=0)
+         li.append(df)
 
-#Create file in directory
-filename = path+"/" + ClientName + ".csv"
-result.to_csv(filename, index=False,header=False)
+    frame = pd.concat(li, axis=0, ignore_index=True)
+    print(frame)
 
 
+
+
+###########################
+if __name__== "__main__":
+  genrateClientReport()
+  #genrateSummaryReport()
 ##################################################################################################################################
 #os.mkdir(path)
 
