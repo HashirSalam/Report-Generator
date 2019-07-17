@@ -9,6 +9,7 @@ from openpyxl import load_workbook
 from openpyxl import Workbook
 from openpyxl.writer.excel import ExcelWriter
 
+pd.options.mode.chained_assignment = None # Removes warning for copied dataframe
 
 def genrateClientReport():
     yearsnow = time.strftime("%Y")
@@ -22,7 +23,7 @@ def genrateClientReport():
     date_ago = agodays+'-'+agomonths+'-'+yearsago
 
     filename = (date_ago + ' to ' + date)
-    print(filename)
+   
 
     #Loading data
     #data = input("Enter input filename (example: input.csv) : ") 
@@ -54,9 +55,24 @@ def genrateClientReport():
     
     #Sort according to date
     result = result.sort_values(by=['Date'])
-        
+
+    #Calculate total duration
+    Duration = data['Duration'].values.tolist()
+    hours =[]
+    minutes = []
+    for d in Duration:
+        hour, minute = d.split(':')
+        hours.append(hour)
+        minutes.append(minute)
+    totalHours = sum(map(int, hours))
+    totalMinutes = sum(map(int, minutes))    
+    totalHours = totalHours + (totalMinutes/60) 
+    totalMinutes = totalMinutes % 60
+    totalDuration = str(int(totalHours)) +":"+ str(int(totalMinutes))
+    
+    totalDuration = '"'+totalDuration+'"'
     #ClientName = input("Enter client's name : ") 
-    ClientName = "Asebestos"
+    ClientName = "Skip Hire"
 
     #Calculation
     rowCount = result.shape[0]
@@ -65,50 +81,36 @@ def genrateClientReport():
     #Getting price according to client
     Clients = pd.read_excel('Clients.xlsx', index_col=0) 
     Clients = Clients[['Client', 'Price']]
-
     Price = Clients.loc[Clients['Client'] == (ClientName)]
     Price = Price['Price'].values[0]
-    
     TotalPrice = Price *TotalInquries
 
-    # Create caclulated frame on CSV top
+    # Create caclulation frame on CSV top
     df1 = pd.DataFrame({
     'Date': [ClientName, 'Date Range', '', '','',''],
     'Time': ['',filename, str(rowCount)+' -25%', '', '', ''],
-    'Caller': ['', '', 'Total enquires', '','',''],
-    'Location': ['', '', str(TotalInquries)+' Invoiced', '','',''],
+    'Caller': ['', '', 'Total enquires', 'Total Time on Phone (minutes)','',''],
+    'Location': ['', '', str(TotalInquries)+' Invoiced', str(totalDuration),'',''],
     'Called': ['', '', 'x'+str(Price), '','',''],
-    'Destination': ['', '', str(TotalPrice), '','',''],
+    'Destination': ['', '', "£"+str(TotalPrice), '','',''],
     'Duration': ['', '', '', '','','']}
     ,index=[0, 1, 2, 3,4,5])
-    
-    # result.loc[-1] = [ClientName, 'Date range :', filename , str(rowCount) +'- 25%', ' Total enquires',str(TotalInquries)+" Invoiced x"+str(Price),str(TotalPrice)]  # adding a row
-    # result.index = result.index + 1  # shifting index
-    # result.sort_index(inplace=True) 
     result = df1.append(result)
-    
-    
-    print (result)
-    
-
-    #Create path
+    #print (result)
+    #Create Report
     path = "./Reports/" + date_ago + " to " + date
-
     #Create Directory if doesnt exit
     if not os.path.exists(path):
         os.makedirs(path)
-
     #Create file in directory
     filename = path+"/" + ClientName + ".csv"
-    
-  
-    result.to_csv(filename, index=False, header=False)
-
+    result.to_csv(filename,encoding='utf-8-sig', index=False, header=False)
+    print("Report generated in " + filename)
 
 ##########################
 def genrateSummaryReport():
 
-    path = r'.\Reports\09-07-2019 to 16-07-2019' # use your path
+    path = r'.\Reports\10-07-2019 to 17-07-2019' # use your path
     all_files = glob.glob(path + "/*.csv")
     print(all_files)
     li = []
@@ -118,7 +120,8 @@ def genrateSummaryReport():
          li.append(df)
 
     frame = pd.concat(li, axis=0, ignore_index=True)
-    print(frame )
+    #For those who might want, for example, every fifth row, but starting at the 2nd row it would be df.iloc[1::5, :]
+    print(frame.iloc[0::2, :])
     
 
 
