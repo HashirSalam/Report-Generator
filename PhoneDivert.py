@@ -5,9 +5,12 @@ import requests
 import pandas as pd
 from io import StringIO
 import time
+import csv
 from openpyxl import load_workbook
 from openpyxl import Workbook
 from openpyxl.writer.excel import ExcelWriter
+from itertools import zip_longest
+import xlsxwriter
 
 pd.options.mode.chained_assignment = None # Removes warning for copied dataframe
 
@@ -109,33 +112,65 @@ def genrateClientReport():
 
 ##########################
 def genrateSummaryReport():
-
-    path = r'.\Reports\10-07-2019 to 17-07-2019' # use your path
-    all_files = glob.glob(path + "/*.csv")
-    print(all_files)
-    li = []
-
-    for filename in all_files:
-         df = pd.read_csv(filename, nrows=2)
-         li.append(df)
-
-    frame = pd.concat(li, axis=0, ignore_index=True)
-    #For those who might want, for example, every fifth row, but starting at the 2nd row it would be df.iloc[1::5, :]
-    print(frame.iloc[0::2, :])
     
+    folders = [f for f in glob.glob('.\\Reports\\' + "**/", recursive=False)]
+    choices = []
+    for f in folders:
+        choices.append(f)
 
+    writer = pd.ExcelWriter("test.xlsx", engine = 'xlsxwriter')
+    #loop over each folder in Reports 
+    for interval in choices: 
+        dateInterval = interval
+        path = r'%s' % dateInterval
+        #path = r".\Reports\"+ dateInterval # use your path
+        all_files = glob.glob(path + "/*.csv")
+        li = []
 
+        #Extracting just 2 lines from the CSVs
+        for filename in all_files:
+            df = pd.read_csv(filename, nrows=2)
+            li.append(df)
+
+        frame = pd.concat(li, axis=0, ignore_index=True,sort=True)
+        #print (frame)
+        #For those who might want, for example, every fifth row, but starting at the 2nd row it would be df.iloc[1::5, :]
+        #df.iloc[:, n]   to access the column at the nth position
+        clients = list(frame.columns.values)
+        clients =  [x for x in clients if "Unnamed:" not in x]
+
+        prices = frame.iloc[1::2, 7::7].values.tolist()
+        prices = [val for sublist in prices for val in sublist]
+        prices = [s.replace('£', '') for s in prices]
+
+        enquires = frame.iloc[1::2, 5::5].values.tolist()
+        enquires = [val for sublist in enquires for val in sublist]
+        enquires = [s.replace(' Invoiced', '') for s in enquires]
+       
+        #merge all information        
+        po = zip(clients,enquires, prices)
+
+        sheetName= dateInterval.replace('.\\Reports',"")
+        sheetName= sheetName.replace("\\","")    
+        print(sheetName)
+        df = pd.DataFrame(po)
+        #Updating header information
+        df.columns = ['Clients', 'Enquires', 'Prices']
+        #print(df)
+        df.to_excel(writer, sheet_name = sheetName,index=False,header=True)
+     
+    writer.save()
+    writer.close()
+    print("Summary report generated successfully")
 
 ###########################
 if __name__== "__main__":
-  #genrateClientReport()
+  genrateClientReport()
   genrateSummaryReport()
 ##################################################################################################################################
 #os.mkdir(path)
-
 # wb2 = load_workbook(r'.\Summary.xlsx')
 # wb2.create_sheet(filename)
-
 # ws1 = wb2.get_sheet_by_name(filename)
 # row = 1
 # ws1.cell(row=row, column=1).value = "Client"
@@ -144,13 +179,8 @@ if __name__== "__main__":
 # # ws1['A2'] = "SomeValue1"
 # # data=[('Account','Amount')]
 # # sheet.append(['Client','Amount'])
-
 # path = "./Reports/" + date_ago + " to " + date
 # os.mkdir(path)
-
-
-
-
 # class PhoneDivert():
 
 #     # yearsnow = time.strftime("%Y")
