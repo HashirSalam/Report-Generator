@@ -11,6 +11,10 @@ from openpyxl.writer.excel import ExcelWriter
 import xlsxwriter
 pd.options.mode.chained_assignment = None # Removes warning for copied dataframe
 
+
+
+
+
 def generateClientReport():
     yearsnow = time.strftime("%Y")
     monthsnow = time.strftime("%m")
@@ -21,91 +25,108 @@ def generateClientReport():
     agomonths = (time.strftime('%m', time.localtime(epoch_ago)))
     agodays = (time.strftime('%d', time.localtime(epoch_ago)))
     date_ago = agodays+'-'+agomonths+'-'+yearsago
-
     filename = (date_ago + ' to ' + date)
-   
-
-    #Loading data
-    #data = input("Enter input filename (example: input.csv) : ") 
-    data = pd.read_csv("input.csv")
-    #separating witheld information
-    reservedRecords = data.loc[data['Caller'] == ("withheld")]
-
-    # dropping ALL duplicte values 
-    data.drop_duplicates(subset ="Caller", keep = False, inplace = True)
-
-    #Add 0s for numbers
-    data['Caller'] = '0' + data['Caller'].astype(str)
-    data['Called'] = '0' + data['Called'].astype(str)
-    data['Destination'] = '0' + data['Destination'].astype(str)
-
-    reservedRecords['Called'] = '0' + reservedRecords['Called'].astype(str)
-    reservedRecords['Destination'] = '0' + reservedRecords['Destination'].astype(str)
-    #To string
-    data['Caller'] = '"'+data['Caller']+'"'
-    data['Called'] = '"'+data['Called']+'"'
-    data['Destination'] = '"'+data['Destination']+'"'
-
-    reservedRecords['Called'] = '"'+reservedRecords['Called']+'"'
-    reservedRecords['Destination'] = '"'+reservedRecords['Destination']+'"'
-
-    #Concat with rest 
-    frames = [data, reservedRecords]
-    result = pd.concat(frames)
     
-    #Sort according to date
-    result = result.sort_values(by=['Date'])
+    #Reading Clients file
+    ClientsData = pd.read_excel('Clients.xlsx', index_col=0) 
+    ClientsDF = pd.DataFrame(ClientsData, columns= ['Login','Pass','Client','Hunt ID','Price'])
 
-    #Calculate total duration
-    Duration = data['Duration'].values.tolist()
-    hours =[]
-    minutes = []
-    for d in Duration:
-        hour, minute = d.split(':')
-        hours.append(hour)
-        minutes.append(minute)
-    totalHours = sum(map(int, hours))
-    totalMinutes = sum(map(int, minutes))    
-    totalHours = totalHours + (totalMinutes/60) 
-    totalMinutes = totalMinutes % 60
-    totalDuration = str(int(totalHours)) +":"+ str(int(totalMinutes))
-    
-    totalDuration = '"'+totalDuration+'"'
-    #ClientName = input("Enter client's name : ") 
-    ClientName = "David"
+    #Iterating over each Client
+    for index, row in ClientsDF.iterrows(): 
+        #print (row["Client"],row["Login"],row["Pass"],row["Hunt ID"],row["Price"])
+        
+        #Load data here from online
+        # headers = {
+        #     'Content-type': 'application/x-www-form-urlencoded'
+        # }
+        # ses = requests.Session()
+        # r2 = ses.post('https://www.phonedivert.co.uk/login.php')
+        # r3 = ses.get('https://www.phonedivert.co.uk/statistics?number=&searchtype=huntgroup&huntgroup='+Hunt_ID+'&descr=&daterange=custom&fromdate='+agodays+'%2F'+agomonths+'%2F'+yearsago+'&todate='+daynow+'%2F'+monthsnow+'%2F'+yearsnow+'&stats=csv')
+        # decodecsv = r3.content.decode("UTF-8")
+        # file = StringIO(decodecsv)
+        # data = pd.read_csv(file)
 
-    #Calculation
-    rowCount = result.shape[0]
-    TotalInquries = rowCount * 0.75
-    
-    #Getting price according to client
-    Clients = pd.read_excel('Clients.xlsx', index_col=0) 
-    Clients = Clients[['Client', 'Price']]
-    Price = Clients.loc[Clients['Client'] == (ClientName)]
-    Price = Price['Price'].values[0]
-    TotalPrice = Price *TotalInquries
+        
+        data = pd.read_csv("input.csv") #IMPORTANT : Comment this line and uncomment the above lines for loading the downloaded CSV
+        
+        #separating witheld information
+        reservedRecords = data.loc[data['Caller'] == ("withheld")]
 
-    # Create caclulation frame on CSV top
-    df1 = pd.DataFrame({
-    'Date': [ClientName, 'Date Range', '', '','',''],
-    'Time': ['',filename, str(rowCount)+' -25%', '', '', ''],
-    'Caller': ['', '', 'Total enquires', 'Total Time on Phone (minutes)','',''],
-    'Location': ['', '', str(TotalInquries)+' Invoiced', str(totalDuration),'',''],
-    'Called': ['', '', 'x'+str(Price), '','',''],
-    'Destination': ['', '', "£"+str(TotalPrice), '','',''],
-    'Duration': ['', '', '', '','','']}
-    ,index=[0, 1, 2, 3,4,5])
-    result = df1.append(result)
-    #print (result)
-    #Create Report
-    path = "./Reports/" + date_ago + " to " + date
-    #Create Directory if doesnt exit
-    if not os.path.exists(path):
-        os.makedirs(path)
-    #Create file in directory
-    filename = path+"/" + ClientName + ".csv"
-    result.to_csv(filename,encoding='utf-8-sig', index=False, header=False)
-    print("Report generated in " + filename)
+        # dropping ALL duplicte values 
+        data.drop_duplicates(subset ="Caller", keep = False, inplace = True)
+
+        #Add 0s for numbers
+        data['Caller'] = '0' + data['Caller'].astype(str)
+        data['Called'] = '0' + data['Called'].astype(str)
+        data['Destination'] = '0' + data['Destination'].astype(str)
+
+        reservedRecords['Called'] = '0' + reservedRecords['Called'].astype(str)
+        reservedRecords['Destination'] = '0' + reservedRecords['Destination'].astype(str)
+        #To string
+        data['Caller'] = '"'+data['Caller']+'"'
+        data['Called'] = '"'+data['Called']+'"'
+        data['Destination'] = '"'+data['Destination']+'"'
+
+        reservedRecords['Called'] = '"'+reservedRecords['Called']+'"'
+        reservedRecords['Destination'] = '"'+reservedRecords['Destination']+'"'
+
+        #Concat with rest 
+        frames = [data, reservedRecords]
+        result = pd.concat(frames)
+        
+        #Sort according to date
+        result = result.sort_values(by=['Date'])
+
+        #Calculate total duration
+        Duration = data['Duration'].values.tolist()
+        hours =[]
+        minutes = []
+        for d in Duration:
+            hour, minute = d.split(':')
+            hours.append(hour)
+            minutes.append(minute)
+        totalHours = sum(map(int, hours))
+        totalMinutes = sum(map(int, minutes))    
+        totalHours = totalHours + (totalMinutes/60) 
+        totalMinutes = totalMinutes % 60
+        totalDuration = str(int(totalHours)) +":"+ str(int(totalMinutes))
+        
+        totalDuration = '"'+totalDuration+'"'
+        
+        ClientName = row["Client"]
+
+        #Calculation
+        rowCount = result.shape[0]
+        TotalInquries = rowCount * 0.75
+        
+        #Getting price according to client
+        Clients = pd.read_excel('Clients.xlsx', index_col=0) 
+        Clients = Clients[['Client', 'Price']]
+        Price = Clients.loc[Clients['Client'] == (ClientName)]
+        Price = Price['Price'].values[0]
+        TotalPrice = Price *TotalInquries
+
+        # Create caclulation frame on CSV top
+        df1 = pd.DataFrame({
+        'Date': [ClientName, 'Date Range', '', '','',''],
+        'Time': ['',filename, str(rowCount)+' -25%', '', '', ''],
+        'Caller': ['', '', 'Total enquires', 'Total Time on Phone (minutes)','',''],
+        'Location': ['', '', str(TotalInquries)+' Invoiced', str(totalDuration),'',''],
+        'Called': ['', '', 'x'+str(Price), '','',''],
+        'Destination': ['', '', "£"+str(TotalPrice), '','',''],
+        'Duration': ['', '', '', '','','']}
+        ,index=[0, 1, 2, 3,4,5])
+        result = df1.append(result)
+        #print (result)
+        #Create Report
+        path = "./Reports/" + date_ago + " to " + date
+        #Create Directory if doesnt exit
+        if not os.path.exists(path):
+            os.makedirs(path)
+        #Create file in directory
+        filename = path+"/" + ClientName + ".csv"
+        result.to_csv(filename,encoding='utf-8-sig', index=False, header=False)
+        print("Report generated in " + filename)
 
 ##########################
 def generateSummaryReport():
@@ -130,22 +151,21 @@ def generateSummaryReport():
             df = pd.read_csv(filename, nrows=2)
             li.append(df)
 
-        frame = pd.concat(li, axis=0, ignore_index=True,sort=True)
+        frame = pd.concat(li, axis=0, ignore_index=False,sort=True)
+        frame.rename( columns={'Unnamed: 5':'Prices'}, inplace=True )
+        frame.rename( columns={'Unnamed: 3':'Enquires'}, inplace=True )
         #print (frame)
         #For those who might want, for example, every fifth row, but starting at the 2nd row it would be df.iloc[1::5, :]
         #df.iloc[:, n]   to access the column at the nth position
         clients = list(frame.columns.values)
         clients =  [x for x in clients if "Unnamed:" not in x]
-        noc = len(clients)
-        noc = noc + 4
-        prices = frame.iloc[1::2, noc::noc].values.tolist()
-        prices = [val for sublist in prices for val in sublist]
+
+        prices = frame['Prices'].tolist()
+        prices = [x for x in prices if str(x) != 'nan']
         prices = [s.replace('£', '') for s in prices]
-        
-        noc = len(clients)
-        noc = noc + 2
-        enquires = frame.iloc[1::2, noc::noc].values.tolist()
-        enquires = [val for sublist in enquires for val in sublist]
+  
+        enquires = frame['Enquires'].tolist()
+        enquires = [x for x in enquires if str(x) != 'nan']
         enquires = [s.replace(' Invoiced', '') for s in enquires]
        
         #merge all information   
@@ -169,85 +189,6 @@ def generateSummaryReport():
 ###########################
 if __name__== "__main__":
 
-  #reportType = input("Select an option : (1) Client report (2) Summary Report  ") 
-  #if reportType == "1":
     generateClientReport()
-  #else:
     generateSummaryReport()
 ##################################################################################################################################
-#os.mkdir(path)
-# wb2 = load_workbook(r'.\Summary.xlsx')
-# wb2.create_sheet(filename)
-# ws1 = wb2.get_sheet_by_name(filename)
-# row = 1
-# ws1.cell(row=row, column=1).value = "Client"
-# ws1.cell(row=row, column=2).value = "Amount"
-# # ws1['A2'] = "SomeValue1"
-# # ws1['A2'] = "SomeValue1"
-# # data=[('Account','Amount')]
-# # sheet.append(['Client','Amount'])
-# path = "./Reports/" + date_ago + " to " + date
-# os.mkdir(path)
-# class PhoneDivert():
-
-#     # yearsnow = time.strftime("%Y")
-#     # monthsnow = time.strftime("%m")
-#     # daynow = time.strftime("%d")
-#     # epoch_ago = time.time()-604800
-#     # yearsago = str((time.strftime('%Y', time.localtime(epoch_ago))))
-#     # agomonths = (time.strftime('%m', time.localtime(epoch_ago)))
-#     # agodays = (time.strftime('%d', time.localtime(epoch_ago)))
-#     #
-#     # print(daynow, daysago)
-#     def __init__(self, Client, Hunt_ID, Price):
-#         self.Client = Client
-#         self.Hunt_ID = Hunt_ID
-#         self.Price = Price
-
-#     def GetSeshRequest(self):
-
-#         headers = {
-#             'Content-type': 'application/x-www-form-urlencoded'
-#         }
-
-#         ses = requests.Session()
-#         r2 = ses.post('https://www.phonedivert.co.uk/login.php')
-#         r3 = ses.get('https://www.phonedivert.co.uk/statistics?number=&searchtype=huntgroup&huntgroup='+self.Hunt_ID+'&descr=&daterange=custom&fromdate='+agodays+'%2F'+agomonths+'%2F'+yearsago+'&todate='+daynow+'%2F'+monthsnow+'%2F'+yearsnow+'&stats=csv')
-#         return r3
-
-#     def DataFrameRequest(self):
-#         r3 = self.GetSeshRequest()
-#         decodecsv = r3.content.decode("UTF-8")
-#         # reader = csv.reader(decodecsv)
-#         file = StringIO(decodecsv)
-#         df = pd.read_csv(file, sep=",", header=None, names=['Date', 'Time', 'Calling Number', 'Called From', 'Called Number', 'Destination','Tme on Phone'])
-#         print(df)
-#         dedup = df.drop_duplicates(subset='Calling Number')
-#         print(dedup)
-#         count_row = dedup.shape[0]
-#         print(self.Price)
-#         print(count_row)
-#         amount = count_row * self.Price
-#         export_csv = dedup.to_csv(path+'/'+client+'.csv',index=None)
-#         row1 = row + 1
-#         row1 = int(row1)
-#         ws1.cell(row=row1, column=1).value = client
-#         ws1.cell(row=row1, column=2).value = amount
-#         return dedup
-#         return count_row
-
-
-
-# df = pd.read_excel(r'C:\Users\User\Dropbox\PYCharms\PhoneDivert Report\Clients.xlsx')
-# print(df)
-
-
-# for index, row in df.iterrows():
-#     client = str(row["Client"])
-#     Hunt_ID = str(row["Hunt ID"])
-#     Price = row["Price"]
-#     link = PhoneDivert(Client=client, Hunt_ID=Hunt_ID, Price=Price)
-#     PhoneDivert.DataFrameRequest(link)
-#     print(client, Hunt_ID, Price)
-
-# wb2.save('Summary.xlsx')
