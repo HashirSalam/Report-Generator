@@ -25,6 +25,7 @@ def generateClientReport():
     agomonths = (time.strftime('%m', time.localtime(epoch_ago)))
     agodays = (time.strftime('%d', time.localtime(epoch_ago)))
     date_ago = agodays+'-'+agomonths+'-'+yearsago
+    filename = (date_ago + ' to ' + date)
     
     #Reading Clients file
     ClientsData = pd.read_excel('Clients.xlsx', index_col=0) 
@@ -46,7 +47,7 @@ def generateClientReport():
         # data = pd.read_csv(file)
 
         
-        data = pd.read_csv("input.csv",names=["Date","Time","Caller","Location","Called","Destination","Duration"]) #IMPORTANT : Comment this line and uncomment the above lines for loading the downloaded CSV
+        data = pd.read_csv("input.csv") #IMPORTANT : Comment this line and uncomment the above lines for loading the downloaded CSV
         
         #separating witheld information
         reservedRecords = data.loc[data['Caller'] == ("withheld")]
@@ -106,10 +107,9 @@ def generateClientReport():
         TotalPrice = Price *TotalInquries
 
         # Create caclulation frame on CSV top
-        interval =  (date_ago + ' to ' + date)
         df1 = pd.DataFrame({
         'Date': [ClientName, 'Date Range', '', '','',''],
-        'Time': ['',interval, str(rowCount)+' -25%', '', '', ''],
+        'Time': ['',filename, str(rowCount)+' -25%', '', '', ''],
         'Caller': ['', '', 'Total enquires', 'Total Time on Phone (minutes)','',''],
         'Location': ['', '', str(TotalInquries)+' Invoiced', str(totalDuration),'',''],
         'Called': ['', '', 'x'+str(Price), '','',''],
@@ -158,10 +158,8 @@ def generateSummaryReport():
         #For those who might want, for example, every fifth row, but starting at the 2nd row it would be df.iloc[1::5, :]
         #df.iloc[:, n]   to access the column at the nth position
         clients = list(frame.columns.values)
-        #print ((clients))
         clients =  [x for x in clients if "Unnamed:" not in x]
-        clients.remove('Prices')
-        clients.remove('Enquires')
+
         prices = frame['Prices'].tolist()
         prices = [x for x in prices if str(x) != 'nan']
         prices = [s.replace('£', '') for s in prices]
