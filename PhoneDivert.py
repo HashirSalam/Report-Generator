@@ -5,16 +5,13 @@ import requests
 import pandas as pd
 from io import StringIO
 import time
-import csv
 from openpyxl import load_workbook
 from openpyxl import Workbook
 from openpyxl.writer.excel import ExcelWriter
-from itertools import zip_longest
 import xlsxwriter
-
 pd.options.mode.chained_assignment = None # Removes warning for copied dataframe
 
-def genrateClientReport():
+def generateClientReport():
     yearsnow = time.strftime("%Y")
     monthsnow = time.strftime("%m")
     daynow = time.strftime("%d")
@@ -75,7 +72,7 @@ def genrateClientReport():
     
     totalDuration = '"'+totalDuration+'"'
     #ClientName = input("Enter client's name : ") 
-    ClientName = "Skip Hire"
+    ClientName = "David"
 
     #Calculation
     rowCount = result.shape[0]
@@ -111,14 +108,15 @@ def genrateClientReport():
     print("Report generated in " + filename)
 
 ##########################
-def genrateSummaryReport():
+def generateSummaryReport():
     
     folders = [f for f in glob.glob('.\\Reports\\' + "**/", recursive=False)]
     choices = []
     for f in folders:
         choices.append(f)
 
-    writer = pd.ExcelWriter("test.xlsx", engine = 'xlsxwriter')
+    writer = pd.ExcelWriter("Summary.xlsx", engine = 'xlsxwriter')
+    print ("Reading folders :")   
     #loop over each folder in Reports 
     for interval in choices: 
         dateInterval = interval
@@ -138,20 +136,25 @@ def genrateSummaryReport():
         #df.iloc[:, n]   to access the column at the nth position
         clients = list(frame.columns.values)
         clients =  [x for x in clients if "Unnamed:" not in x]
-
-        prices = frame.iloc[1::2, 7::7].values.tolist()
+        noc = len(clients)
+        noc = noc + 4
+        prices = frame.iloc[1::2, noc::noc].values.tolist()
         prices = [val for sublist in prices for val in sublist]
         prices = [s.replace('£', '') for s in prices]
-
-        enquires = frame.iloc[1::2, 5::5].values.tolist()
+        
+        noc = len(clients)
+        noc = noc + 2
+        enquires = frame.iloc[1::2, noc::noc].values.tolist()
         enquires = [val for sublist in enquires for val in sublist]
         enquires = [s.replace(' Invoiced', '') for s in enquires]
        
-        #merge all information        
+        #merge all information   
+        #print (clients,enquires, prices)     
         po = zip(clients,enquires, prices)
 
         sheetName= dateInterval.replace('.\\Reports',"")
-        sheetName= sheetName.replace("\\","")    
+        sheetName= sheetName.replace("\\","") 
+      
         print(sheetName)
         df = pd.DataFrame(po)
         #Updating header information
@@ -165,8 +168,12 @@ def genrateSummaryReport():
 
 ###########################
 if __name__== "__main__":
-  genrateClientReport()
-  genrateSummaryReport()
+
+  #reportType = input("Select an option : (1) Client report (2) Summary Report  ") 
+  #if reportType == "1":
+    generateClientReport()
+  #else:
+    generateSummaryReport()
 ##################################################################################################################################
 #os.mkdir(path)
 # wb2 = load_workbook(r'.\Summary.xlsx')
