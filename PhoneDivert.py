@@ -47,13 +47,16 @@ def generateClientReport():
 
         
         data = pd.read_csv("input.csv",names=["Date","Time","Caller","Location","Called","Destination","Duration"]) #IMPORTANT : Comment this line and uncomment the above lines for loading the downloaded CSV
-        
+        #print(data.shape[0])
         #separating witheld information
         reservedRecords = data.loc[data['Caller'] == ("withheld")]
 
-        # dropping ALL duplicte values 
-        data.drop_duplicates(subset ="Caller", keep = False, inplace = True)
-
+        #print(data.shape[0])
+        # dropping ALL duplicte values
+        data = data[data.Caller != "withheld"] #removing witheld will be added later
+        data.sort_values(by=['Date']) #Sorting before removing duplicates
+        data.drop_duplicates(subset ="Caller", keep = 'first' , inplace = True) #removing duplicates (Keeping first occurance)
+        #print(data.shape[0])
         #Add 0s for numbers
         data['Caller'] = '0' + data['Caller'].astype(str)
         data['Called'] = '0' + data['Called'].astype(str)
@@ -69,7 +72,7 @@ def generateClientReport():
         reservedRecords['Called'] = '"'+reservedRecords['Called']+'"'
         reservedRecords['Destination'] = '"'+reservedRecords['Destination']+'"'
 
-        #Concat with rest 
+        #Adding witheld back to the data
         frames = [data, reservedRecords]
         result = pd.concat(frames)
         
@@ -101,6 +104,7 @@ def generateClientReport():
         #Getting price according to client
         Clients = pd.read_excel('Clients.xlsx', index_col=0) 
         Clients = Clients[['Client', 'Price']]
+        #print (Clients)
         Price = Clients.loc[Clients['Client'] == (ClientName)]
         Price = Price['Price'].values[0]
         TotalPrice = Price *TotalInquries
@@ -151,10 +155,10 @@ def generateSummaryReport():
             df = pd.read_csv(filename, nrows=2)
             li.append(df)
 
-        frame = pd.concat(li, axis=0, ignore_index=False,sort=True)
+        frame = pd.concat(li, axis=0, ignore_index=False,sort=False)
         frame.rename( columns={'Unnamed: 5':'Prices'}, inplace=True )
         frame.rename( columns={'Unnamed: 3':'Enquires'}, inplace=True )
-        #print (frame)
+        print (frame)
         #For those who might want, for example, every fifth row, but starting at the 2nd row it would be df.iloc[1::5, :]
         #df.iloc[:, n]   to access the column at the nth position
         clients = list(frame.columns.values)
@@ -170,8 +174,12 @@ def generateSummaryReport():
         enquires = [x for x in enquires if str(x) != 'nan']
         enquires = [s.replace(' Invoiced', '') for s in enquires]
        
-        #merge all information   
-        #print (clients,enquires, prices)     
+        #merge all information
+        # for index in clients:
+        #     print (index)
+        # for index in prices:
+        #     print (index)
+                          
         po = zip(clients,enquires, prices)
 
         sheetName= dateInterval.replace('.\\Reports',"")
