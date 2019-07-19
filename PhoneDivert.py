@@ -158,7 +158,7 @@ def generateSummaryReport():
         frame = pd.concat(li, axis=0, ignore_index=False,sort=False)
         frame.rename( columns={'Unnamed: 5':'Prices'}, inplace=True )
         frame.rename( columns={'Unnamed: 3':'Enquires'}, inplace=True )
-        print (frame)
+        #print (frame)
         #For those who might want, for example, every fifth row, but starting at the 2nd row it would be df.iloc[1::5, :]
         #df.iloc[:, n]   to access the column at the nth position
         clients = list(frame.columns.values)
